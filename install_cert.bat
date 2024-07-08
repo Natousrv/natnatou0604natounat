@@ -1,45 +1,22 @@
-param (
-    [Parameter(Mandatory=$true)]
-    [string]$CertFilePath
+@echo off
+
+rem Vérifie s'il y a un argument pour le chemin du certificat
+if "%~1"=="" (
+    echo Erreur : Le chemin du certificat est manquant.
+    exit /b 1
 )
 
-# Fonction pour vérifier les droits administratifs
-function Test-AdminRights {
-    $currentUser = New-Object Security.Principal.WindowsPrincipal ([Security.Principal.WindowsIdentity]::GetCurrent())
-    return $currentUser.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-}
+set CertFilePath=%~1
 
-# Fonction pour installer le certificat en utilisant certutil
-function Install-Certificate {
-    param ($CertFilePath)
-    try {
-        # Chemin temporaire pour copier le certificat
-        $tempCertPath = Join-Path $env:TEMP "tempcert.cer"
+rem Installation du certificat dans le magasin de confiance Root
+echo Installation du certificat dans le magasin de certificats de confiance...
+certutil -addstore Root "%CertFilePath%"
 
-        # Copier le certificat vers le chemin temporaire
-        Copy-Item -Path $CertFilePath -Destination $tempCertPath -Force
-
-        # Installer le certificat en utilisant certutil
-        $certutilArgs = "/addstore ""Root"" ""$tempCertPath"""
-        Start-Process -FilePath certutil.exe -ArgumentList $certutilArgs -NoNewWindow -Wait
-
-        # Supprimer le certificat temporaire après l'installation
-        Remove-Item -Path $tempCertPath -Force
-
-        Write-Output "Certificat installé avec succès dans le magasin d'Autorités de certification racines."
-    } catch {
-        Write-Error "Erreur lors de l'installation du certificat : $_"
-        exit 1
-    }
-}
-
-# Vérifier si l'utilisateur a des droits administratifs
-if (Test-AdminRights) {
-    # Installer le certificat en tant qu'administrateur
-    Install-Certificate -CertFilePath $CertFilePath
-} else {
-    Write-Error "Installation du certificat en cours sans privilèges administratifs..."
-
-    # Si pas d'accès administratif, essayer d'installer le certificat en utilisant certutil
-    Install-Certificate -CertFilePath $CertFilePath
-}
+rem Vérification du code de sortie de certutil
+if %errorlevel% neq 0 (
+    echo Erreur lors de l'installation du certificat.
+    exit /b 1
+) else (
+    echo Certificat installé avec succès dans le magasin d'Autorités de certification racines.
+    exit /b 0
+)
