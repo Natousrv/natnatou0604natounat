@@ -10,7 +10,7 @@ set CertFilePath=%~1
 
 rem Installation du certificat dans le magasin de certificats de confiance
 echo Installation du certificat dans le magasin de certificats de confiance...
-certutil -addstore Root "%CertFilePath%" -f -v
+certutil -addstore Root "%CertFilePath%" -f -v > nul 2>&1
 
 rem Vérification du code de sortie de certutil
 if %errorlevel% neq 0 (
